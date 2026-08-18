@@ -1,0 +1,14 @@
+# Requires Python 3.11.9
+
+fastapi
+uvicorn
+kafka-python
+pydantic
+python-dotenv
+sqlalchemy
+duckdb
+
+pandas
+numpy
+logging
+datetime
