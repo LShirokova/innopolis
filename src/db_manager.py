@@ -5,11 +5,12 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-"""
-Проверяет наличие БД и создает базу, если ее нет.
-Создает таблицы на основе DataFrame.
-"""
+
 class DatabaseManager:
+    """
+    Проверяет наличие БД и создает базу, если ее нет.
+    Создает таблицы на основе DataFrame.
+    """
     def __init__(self, db_user: str, db_pass: str, db_host: str, db_port: str, db_name: str):
         self.db_user = db_user
         self.db_pass = db_pass
@@ -62,3 +63,11 @@ class DatabaseManager:
             logger.info(f"✅ Создана таблица: {schema}.{table_name} ({len(df.columns)} колонок)")
         else:
             logger.info(f"⚠️ Таблица {schema}.{table_name} уже существует. Пропуск создания.")
+
+    def drop_table(self):
+        with self.engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE raw.sensor_data"))
+            conn.execute(text("TRUNCATE TABLE cleaned.sensor_data"))
+            conn.execute(text("TRUNCATE TABLE features.ml_features"))
+            conn.commit()
+        logger.info("⚠️ База данных очищена")

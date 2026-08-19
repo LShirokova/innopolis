@@ -1,14 +1,29 @@
 # Requires Python 3.11.9
 
-fastapi
-uvicorn
-kafka-python
-pydantic
-python-dotenv
-sqlalchemy
-duckdb
-
+# Работа с данными
 pandas
 numpy
-logging
-datetime
+
+# Визуализация графиков
+matplotlib
+seaborn
+
+# Machine Learning
+scikit-learn
+xgboost
+joblib
+
+# Базы данных
+sqlalchemy
+psycopg2-binary
+
+# API для инференса (FastAPI)
+fastapi
+uvicorn
+
+# Streaming (Kafka)
+kafka-python
+
+# Утилиты
+pydantic
+python-dotenv
