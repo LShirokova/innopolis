@@ -103,7 +103,7 @@ def evaluate_baseline(X_train, X_test, y_train, y_test):
     print(f'ROC_AUC: {roc_auc:.4f}')
     print(f'Time: {train_time_base:.4f}')
 
-    os.makedirs('img/model_base', exist_ok=True)
+    os.makedirs('docs/model_base', exist_ok=True)
     cm = confusion_matrix(y_test, y_pred)
 
     fig, ax = plt.subplots(figsize=(5, 3))
@@ -111,8 +111,8 @@ def evaluate_baseline(X_train, X_test, y_train, y_test):
     plt.xlabel('Предсказанный класс')
     plt.ylabel('Истинный класс')
     ax.set_title('Базовая модель (LogisticRegression)')
-    plt.savefig('img/model_base/confusion_matrix.png', dpi=150, bbox_inches='tight')
-    print('📊 марица корреляции сохранена в img/model_base/confusion_matrix.png')
+    plt.savefig('docs/model_base/confusion_matrix.png', dpi=150, bbox_inches='tight')
+    print('📊 марица корреляции сохранена в docs/model_base/confusion_matrix.png')
     
     logger.info(f"✅ Baseline модель обучена: {recall:.3f} (Цель >= 0.85)")
 
@@ -219,9 +219,9 @@ def plot_model_comparison(results_df):
     plt.tight_layout()
     
     # Сохраняем в папку docs для отчета
-    os.makedirs('img/model_comparison', exist_ok=True)
-    plt.savefig('img/model_comparison/model_comparison.png', dpi=150, bbox_inches='tight')
-    print("📊 Графики сохранены в img/model_comparison/model_comparison.png")
+    os.makedirs('docs/model_comparison', exist_ok=True)
+    plt.savefig('docs/model_comparison/model_comparison.png', dpi=150, bbox_inches='tight')
+    print("📊 Графики сохранены в docs/model_comparison/model_comparison.png")
 
 def analyze_feature_importance(model, X_test, y_test, model_name):
     """Анализ важности признаков (поддерживает как деревья, так и нейросети)"""
@@ -382,9 +382,9 @@ def plot_final_metrics(model, X_test, y_test, y_pred_final):
 
     plt.tight_layout()
 
-    os.makedirs('img/best_model', exist_ok=True)
-    plt.savefig('img/best_model/final_evaluation_plots.png', dpi=150)
-    print("📊 Графики сохранены в img/best_model/final_evaluation_plots.png")
+    os.makedirs('docs/best_model', exist_ok=True)
+    plt.savefig('docs/best_model/final_evaluation_plots.png', dpi=150)
+    print("📊 Графики сохранены в docs/best_model/final_evaluation_plots.png")
 
 def simulate_ab_test(y_test, y_pred_base, y_pred_lgb):
     """Симуляция A/B теста через Paired Bootstrap."""
