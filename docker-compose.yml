@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. База данных для Offline Feature Store и сырых данных
   postgres:
@@ -23,7 +21,6 @@ services:
     build: .
     ports:
       - "8000:8000"
-    # Жестко заданные переменные окружения для контейнера
     environment:
       - PYTHONPATH=/app
       - PASS_EXPERIMENTS=True

@@ -19,15 +19,7 @@ while True:
 print('✅ Базы данных готовы к работе!')
 "
 
-# 2. Запускаем ETL
-echo "📊 ЗАПУСК ETL ПАЙПЛАЙНА..."
-python -m src.etl_pipeline
-
-# 3. Обучаем модель и сохраняем артефакт
-echo "🧠 ОБУЧЕНИЕ МОДЕЛИ..."
-python -m src.train
-
-# 4. Синхронизируем фичи в Online Store (Redis)
+# 2. Синхронизируем фичи в Online Store (Redis)
 echo "📦 СИНХРОНИЗАЦИЯ FEATURE STORE..."
 python -m services.feature_store
 
@@ -36,5 +28,5 @@ echo "✅ ВСЕ СЕРВИСЫ ИНИЦИАЛИЗИРОВАННЫЫ"
 echo "🌐 ЗАПУСК FASTAPI НА ПОРТУ 8000..."
 echo "========================================"
 
-# 5. Запускаем API сервер (exec заменяет текущий процесс bash на uvicorn)
+# 3. Запускаем API сервер (exec заменяет текущий процесс bash на uvicorn)
 exec uvicorn api.main:app --host 0.0.0.0 --port 8000

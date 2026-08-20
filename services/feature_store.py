@@ -27,7 +27,6 @@ class FeatureStore:
     def sync_features_to_online_store(self):
         """
         Материализует последние актуальные фичи из Offline (Postgres) в Online (Redis).
-        В реальном проде это делает Feast или специализированный Feature Server.
         """
         logger.info("🟢 Синхронизация фичей: Postgres (Offline) -> Redis (Online)...")
         
@@ -40,12 +39,12 @@ class FeatureStore:
         
         loaded_count = 0
         for _, row in latest_features.iterrows():
-            engine_id = str(row['engine_id'])
+            engine_id = str(int(row['engine_id']))
             # Сохраняем фичи как Hash в Redis (ключ: features:engine_id)
             feature_dict = row[feature_cols].to_dict()
             
-            # Преобразуем numpy типы в нативные Python для Redis
-            feature_dict = {k: float(v) if pd.notnull(v) else None for k, v in feature_dict.items()}
+            # Преобразуем numpy типы. NaN/None заменяем на 0.0, так как Redis не поддерживает None
+            feature_dict = {k: float(v) if pd.notnull(v) else 0.0 for k, v in feature_dict.items()}
             
             self.redis_client.hset(f"features:{engine_id}", mapping=feature_dict)
             loaded_count += 1

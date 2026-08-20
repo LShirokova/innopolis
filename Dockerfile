@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем код приложения и обученную модель
 COPY . .
 
-# Запускаем ETL, обучение, REST API
+# Запускаем Redis и API сервис
 RUN chmod +x entrypoint.sh
 
 # Пробрасываем порт для FastAPI

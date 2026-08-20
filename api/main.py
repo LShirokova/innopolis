@@ -21,8 +21,15 @@ redis_client = redis.Redis(
 )
 
 # Загрузка модели при старте
-model = joblib.load("models/best_model.pkl")
+MODEL_PATH = "models/best_model.pkl"
+model = None
 THRESHOLD = 0.43
+
+if os.path.exists(MODEL_PATH):
+    model = joblib.load(MODEL_PATH)
+    logging.info("✅ Предобученная модель успешно загружена")
+else:
+    logging.warning("⚠️ Файл модели не найден! Эндпойнт /predict недоступен до обучения.")
 
 class PredictionResponse(BaseModel):
     engine_id: str
@@ -37,7 +44,7 @@ def health():
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict_engine_failure(engine_id: str):
-    """Получает предсказание для двигателя из Online Feature Store."""
+    """Получает предсказание для двигателя (id от 1 до 100) из Online Feature Store."""
     start_time = time.perf_counter()
     
     # 1. Достаем фичи из Redis (Online Store) - это занимает <1ms
@@ -46,6 +53,9 @@ def predict_engine_failure(engine_id: str):
     
     if not features:
         raise HTTPException(status_code=404, detail=f"Фичи для двигателя {engine_id} не найдены в Online Store")
+
+    if not model:
+        raise HTTPException(status_code=503, detail="Модель не найдена. Сначала обучите её: docker-compose exec ml_api python -m src.train")
     
     # 2. Подготовка данных для модели (сортируем колонки как при обучении)
     import pandas as pd
