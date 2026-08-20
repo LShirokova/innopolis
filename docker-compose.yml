@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 1. База данных для Offline Feature Store и сырых данных
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: mlops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  # 2. In-memory база для Online Feature Store и Stream processing
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  ml_api:
+    build: .
+    ports:
+      - "8000:8000"
+    # Жестко заданные переменные окружения для контейнера
+    environment:
+      - PYTHONPATH=/app
+      - PASS_EXPERIMENTS=True
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=secret
+      - DB_NAME=mlops_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  pg_data:

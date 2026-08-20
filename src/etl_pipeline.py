@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 from dotenv import load_dotenv
 from sqlalchemy import text
-from db_manager import DatabaseManager
+from src.db_manager import DatabaseManager
 
 load_dotenv()
 
@@ -148,13 +148,13 @@ def build_features_layer():
 
 def clear_layers():
     """Очищает все слои перед загрузкой новых данных."""
-    logger.info("Очистка слоев данных (TRUNCATE)...")
+    logger.info("Очистка слоев данных...")
     with DB.engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE raw.sensor_data"))
-        conn.execute(text("TRUNCATE TABLE cleaned.sensor_data"))
-        conn.execute(text("TRUNCATE TABLE features.ml_features"))
+        conn.execute(text("DROP TABLE IF EXISTS raw.sensor_data"))
+        conn.execute(text("DROP TABLE IF EXISTS cleaned.sensor_data"))
+        conn.execute(text("DROP TABLE IF EXISTS features.ml_features"))
         conn.commit()
-    logger.info("БД: слои очищены.")
+    logger.info("✅ БД: слои очищены (готовы к созданию).")
 
 
 # ==========================================

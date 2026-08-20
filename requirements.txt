@@ -10,6 +10,7 @@ seaborn
 
 # Machine Learning
 scikit-learn
+lightgbm
 xgboost
 joblib
 
@@ -18,6 +19,7 @@ sqlalchemy
 psycopg2-binary
 
 # API для инференса (FastAPI)
+redis
 fastapi
 uvicorn
 
@@ -25,5 +27,6 @@ uvicorn
 kafka-python
 
 # Утилиты
+httpx
 pydantic
 python-dotenv

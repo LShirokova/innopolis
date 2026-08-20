@@ -1,23 +1,29 @@
+import os
 import time
-import pandas as pd
+import joblib
+import logging
+import warnings
+
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import warnings
-from sklearn.model_selection import GroupShuffleSplit, GroupKFold, cross_validate, RandomizedSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from sklearn.metrics import confusion_matrix, make_scorer, roc_auc_score, ConfusionMatrixDisplay, RocCurveDisplay, PrecisionRecallDisplay
+
 from sklearn.utils import resample
+from sklearn.metrics import confusion_matrix, make_scorer, roc_auc_score, ConfusionMatrixDisplay, RocCurveDisplay, PrecisionRecallDisplay
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
 from sklearn.inspection import permutation_importance
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import GroupShuffleSplit, GroupKFold, cross_validate, RandomizedSearchCV
+
 import lightgbm as lgb
 import xgboost as xgb
-import joblib
-import os
-import logging
+
 from dotenv import load_dotenv
-from db_manager import DatabaseManager
+from src.db_manager import DatabaseManager
 
 load_dotenv()
 
@@ -32,6 +38,7 @@ TARGET_COL = 'target_label'
 MODEL_SAVE_PATH = "models/best_model.pkl"
 RANDOM_STATE = 42
 RESULTS = [] # для сравнения моделей
+PASS_EXPERIMENTS = os.getenv("PASS_EXPERIMENTS", False) # Не запускаем эксперименты в докере
 
 db_manager = DatabaseManager(
     db_user=os.getenv('DB_USER'),
@@ -140,6 +147,16 @@ def run_experiments(X, y, groups):
         "RandomForest": RandomForestClassifier(n_estimators=100, class_weight='balanced', n_jobs=-1, random_state=RANDOM_STATE),
         "XGBoost": xgb.XGBClassifier(n_estimators=100, objective='binary:logistic', eval_metric='logloss', learning_rate=0.1, random_state=RANDOM_STATE, verbosity=0),
         "LightGBM": lgb.LGBMClassifier(class_weight='balanced', random_state=42, n_jobs=-1, verbose=-1),
+        "MLP": Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", MLPClassifier(
+                hidden_layer_sizes=(64, 32),
+                max_iter=300,
+                random_state=RANDOM_STATE,
+                early_stopping=True,
+                n_iter_no_change=10
+            ))
+        ])
     }
     
     for name, model in models.items():
@@ -171,7 +188,9 @@ def plot_model_comparison(results_df):
     colors = ['#8da0cb', # Base - синий
               '#a6d854', # RandomForest - зеленый
               '#db5f57', # XGBoost - красный
-              '#e78ac3'] # LightGBM - оранжевый
+              '#ffd92f',  # LightGBM - желтый
+              '#b3b3b3',  # MLP - серый
+            ]
     
     # Создаем сетку 3x3 (так как 7 метрик, 2 ячейки будут пустые)
     fig, axes = plt.subplots(nrows=1, ncols=len(metrics), figsize=(16, 6))
@@ -254,7 +273,7 @@ def train_final_model(X_train, y_train, groups_train):
     lgbm_model = lgb.LGBMClassifier(
         class_weight='balanced',
         random_state=RANDOM_STATE,
-        n_jobs=-1,
+        n_jobs=1 if PASS_EXPERIMENTS else -1,
         verbose=-1
     )
     param_distributions = {
@@ -271,7 +290,7 @@ def train_final_model(X_train, y_train, groups_train):
         scoring='recall',
         cv=gkf,
         random_state=RANDOM_STATE,
-        n_jobs=-1
+        n_jobs=1 if PASS_EXPERIMENTS else -1
     )
 
     search.fit(X_train, y_train, groups=groups_train)
@@ -369,7 +388,7 @@ def plot_final_metrics(model, X_test, y_test, y_pred_final):
 
     # 1. Матрица ошибок
     ConfusionMatrixDisplay.from_predictions(y_test, y_pred_final, ax=axes[0], cmap='Blues', normalize='true')
-    axes[0].set_title("Confusion Matrix (Нормализованная)")
+    axes[0].set_title("Confusion Matrix")
 
     # 2. ROC-AUC кривая
     RocCurveDisplay.from_estimator(model, X_test, y_test, ax=axes[1])
@@ -437,24 +456,28 @@ def save_model(model):
 if __name__ == "__main__":
     X, y, groups = load_data()
     X_train, X_test, y_train, y_test, groups_train, groups_test = split_data(X, y, groups)
-    
-    # 1. Обучаем Base и СРАЗУ забираем её в переменную
-    base_model = evaluate_baseline(X_train, X_test, y_train, y_test)
-    y_pred_base_ab = base_model.predict(X_test) # Для Base дефолтный порог ОК
-    
-    # 2. Эксперименты
-    run_experiments(X, y, groups)
+
+    if not PASS_EXPERIMENTS:
+        # 1. Обучаем Base и СРАЗУ забираем её в переменную
+        base_model = evaluate_baseline(X_train, X_test, y_train, y_test)
+        y_pred_base_ab = base_model.predict(X_test) # Для Base дефолтный порог ОК
+        
+        # 2. Эксперименты
+        run_experiments(X, y, groups)
     
     # 3. Обучаем финальную модель
     best_model = train_final_model(X_train, y_train, groups_train)
-    
-    # 4. Оценка финальной модели И забираем её предсказания с лучшим порогом
-    y_pred_lgb_ab, best_thresh = final_evaluation(best_model, X_test, y_test)
-    plot_final_metrics(best_model, X_test, y_test, y_pred_lgb_ab)
-    
-    # 5. Запускаем A/B тест, передавая оба массива предсказаний
-    simulate_ab_test(y_test, y_pred_base_ab, y_pred_lgb_ab)
-    
-    # 6. Важность признаков и сохранение
+
+    if not PASS_EXPERIMENTS:
+        # 4. Оценка финальной модели И забираем её предсказания с лучшим порогом
+        y_pred_lgb_ab, best_thresh = final_evaluation(best_model, X_test, y_test)
+        plot_final_metrics(best_model, X_test, y_test, y_pred_lgb_ab)
+        
+        # 5. Запускаем A/B тест, передавая оба массива предсказаний
+        simulate_ab_test(y_test, y_pred_base_ab, y_pred_lgb_ab)
+        
+    # 6. Важность признаков
     analyze_feature_importance(best_model, X_test, y_test, "Финальный LightGBM")
+
+    # охранение
     save_model(best_model)
