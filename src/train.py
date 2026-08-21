@@ -454,30 +454,36 @@ def save_model(model):
     logger.info(f"✅✅✅ Модель успешно сохранена в {MODEL_SAVE_PATH}")
 
 if __name__ == "__main__":
-    X, y, groups = load_data()
-    X_train, X_test, y_train, y_test, groups_train, groups_test = split_data(X, y, groups)
-
-    if not PASS_EXPERIMENTS:
-        # 1. Обучаем Base и СРАЗУ забираем её в переменную
-        base_model = evaluate_baseline(X_train, X_test, y_train, y_test)
-        y_pred_base_ab = base_model.predict(X_test) # Для Base дефолтный порог ОК
-        
-        # 2. Эксперименты
-        run_experiments(X, y, groups)
+    if os.path.exists(MODEL_SAVE_PATH):
+        print("Модель уже обучена, продолжаем работу.")
+        best_model = joblib.load(MODEL_SAVE_PATH)
+    else:
+        print("Модель не найдена. Начинаем обучение...")
     
-    # 3. Обучаем финальную модель
-    best_model = train_final_model(X_train, y_train, groups_train)
+        X, y, groups = load_data()
+        X_train, X_test, y_train, y_test, groups_train, groups_test = split_data(X, y, groups)
 
-    if not PASS_EXPERIMENTS:
-        # 4. Оценка финальной модели И забираем её предсказания с лучшим порогом
-        y_pred_lgb_ab, best_thresh = final_evaluation(best_model, X_test, y_test)
-        plot_final_metrics(best_model, X_test, y_test, y_pred_lgb_ab)
+        if not PASS_EXPERIMENTS:
+            # 1. Обучаем Base и СРАЗУ забираем её в переменную
+            base_model = evaluate_baseline(X_train, X_test, y_train, y_test)
+            y_pred_base_ab = base_model.predict(X_test) # Для Base дефолтный порог ОК
+            
+            # 2. Эксперименты
+            run_experiments(X, y, groups)
         
-        # 5. Запускаем A/B тест, передавая оба массива предсказаний
-        simulate_ab_test(y_test, y_pred_base_ab, y_pred_lgb_ab)
-        
-    # 6. Важность признаков
-    analyze_feature_importance(best_model, X_test, y_test, "Финальный LightGBM")
+        # 3. Обучаем финальную модель
+        best_model = train_final_model(X_train, y_train, groups_train)
 
-    # охранение
-    save_model(best_model)
+        if not PASS_EXPERIMENTS:
+            # 4. Оценка финальной модели И забираем её предсказания с лучшим порогом
+            y_pred_lgb_ab, best_thresh = final_evaluation(best_model, X_test, y_test)
+            plot_final_metrics(best_model, X_test, y_test, y_pred_lgb_ab)
+            
+            # 5. Запускаем A/B тест, передавая оба массива предсказаний
+            simulate_ab_test(y_test, y_pred_base_ab, y_pred_lgb_ab)
+            
+        # 6. Важность признаков
+        analyze_feature_importance(best_model, X_test, y_test, "Финальный LightGBM")
+
+        # охранение
+        save_model(best_model)

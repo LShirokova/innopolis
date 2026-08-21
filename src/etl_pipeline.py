@@ -163,7 +163,7 @@ def clear_layers():
 
 if __name__ == "__main__":
     # При запуске пайплайна очищаем БД
-    #clear_layers()
+    clear_layers()
 
     # Последовательный запуск слоев
     load_to_raw_layer()
