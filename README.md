@@ -66,16 +66,7 @@ uvicorn api.main:app --reload
 docker-compose up --build
 ```
 Докер с зависимостями поднимается за 14 шагов.  
-Если модель уже обучена, переходи к шагу 2.
-
-### 1.1 Если модель не обучена, создать базу и залить данные
-docker-compose exec ml_api python -m src.etl_pipeline
-
-### 1.2 Обучить модель (сохранится прямо в контейнер)
-docker-compose exec ml_api python -m src.train
-
-### 1.3 Перезапустить контейнер, чтобы API подхватил новую модель
-docker-compose restart ml_api
+Обучение модели занимает время. На моем CPU < 3 минут. 
 
 ## 2. Сервис доступен по адресу:
 http://localhost:8000/docs
